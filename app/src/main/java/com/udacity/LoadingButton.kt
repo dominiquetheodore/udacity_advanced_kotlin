@@ -7,7 +7,11 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.View
 import android.view.animation.LinearInterpolator
+import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.core.content.withStyledAttributes
+import kotlinx.android.synthetic.main.content_main.*
+import kotlinx.android.synthetic.main.content_main.view.*
 import kotlin.properties.Delegates
 
 class LoadingButton @JvmOverloads constructor(
@@ -15,6 +19,7 @@ class LoadingButton @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
     private var progress = 0
     private var currentSweepAngle = 0
+
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
         textAlign = Paint.Align.CENTER
@@ -26,25 +31,25 @@ class LoadingButton @JvmOverloads constructor(
     private var btnColor2 = 0
     private var btnColor3 = 0
 
-    private var radius = 100f
+    private var radius = 40f
 
     private var widthSize = 0
     private var heightSize = 0
 
     private val valueAnimator = ValueAnimator()
+    private lateinit var btnTxt: String
 
     private var buttonState: ButtonState by Delegates.observable<ButtonState>(ButtonState.Completed) { p, old, new ->
         when(new) {
             ButtonState.Loading -> {
-                Log.i("btnState", "button loading")
                 startLoadingAnimation()
             }
             ButtonState.Clicked -> {
-                Log.i("btnState", "button clicked")
+                btnTxt = "We are loading"
                 startClickedAnimation()
             }
             ButtonState.Completed -> {
-                Log.i("btnState", "download completed")
+                btnTxt = "Download"
             }
         }
     }
@@ -55,20 +60,13 @@ class LoadingButton @JvmOverloads constructor(
 
     init {
         isClickable = true
-        context.withStyledAttributes(attrs, R.styleable.LoadingButton) {
-            btnColor1 = getColor(R.styleable.LoadingButton_btnColor1, 0)
-            btnColor2 = getColor(R.styleable.LoadingButton_btnColor2, 0)
-            btnColor3 = getColor(R.styleable.LoadingButton_btnColor3, 0)
-        }
-
+        btnTxt = "We are loading."
         startAnimation()
     }
 
     override fun performClick(): Boolean {
-        // if (super.performClick()) return true
+        if (super.performClick()) return true
         setDownloadState(ButtonState.Clicked)
-        Log.i("checkedRadio", "clicked the custom element")
-
         invalidate()
         return true
     }
@@ -79,7 +77,6 @@ class LoadingButton @JvmOverloads constructor(
             interpolator = LinearInterpolator()
             addUpdateListener { valueAnimator ->
                 currentSweepAngle = valueAnimator.animatedValue as Int
-                // Log.i("customViewLog", currentSweepAngle.toString())
                 invalidate()
             }
         }
@@ -91,12 +88,23 @@ class LoadingButton @JvmOverloads constructor(
         super.onDraw(canvas)
 
         if (canvas != null) {
-            paint.setColor(Color.RED)
-            canvas.drawRect(200f, 100f, 800f + progress, 600f, paint)
-            canvas.drawText("Download", 450f, 100f, paint)
-            paint.color = Color.YELLOW;
-            var boundingRect = RectF((width / 4).toFloat(), (height / 2).toFloat() - 200f, (width / 4).toFloat() + radius, (height / 2).toFloat() + currentSweepAngle)
-            canvas.drawArc(boundingRect, 0F, currentSweepAngle.toFloat(), true, paint)
+            paint.color = ContextCompat.getColor(context, R.color.colorPrimary)
+            canvas.drawRect(0f, 0f, widthSize.toFloat(), heightSize.toFloat(), paint)
+            paint.color = ContextCompat.getColor(context, R.color.colorPrimaryDark)
+            if (progress < 100){
+                canvas.drawRect(0f, 0f, widthSize*progress/100f.toFloat(), width.toFloat(), paint)
+                paint.color = ContextCompat.getColor(context, R.color.colorAccent);
+                var boundingRect = RectF(widthSize*0.8f, heightSize/2.0f - radius,widthSize*0.8f + radius*2f,heightSize/2.0f + radius)
+                canvas.drawArc(boundingRect, 0F, currentSweepAngle.toFloat(), true, paint)
+            }
+            else {
+                btnTxt = "Download"
+            }
+            paint.color = Color.WHITE;
+            // calculate text height to center button text
+            val textHeight: Float = paint.descent() - paint.ascent()
+            val textOffset: Float = textHeight / 2 - paint.descent()
+            canvas.drawText(btnTxt, widthSize.toFloat()/2.0f, heightSize/2.0f + textOffset, paint)
         }
     }
 
@@ -115,8 +123,8 @@ class LoadingButton @JvmOverloads constructor(
 
     private fun startLoadingAnimation(){
         Log.i("btnState", "loading")
-        var anim = ValueAnimator.ofInt(0, 360).apply {
-            duration = 6500
+        var anim = ValueAnimator.ofInt(0, 100).apply {
+            duration = 5000
             interpolator = LinearInterpolator()
             addUpdateListener { valueAnimator ->
                 progress = valueAnimator.animatedValue as Int
@@ -128,8 +136,7 @@ class LoadingButton @JvmOverloads constructor(
     }
 
     private fun startClickedAnimation(){
-        Log.i("btnState", "loading")
-        var anim = ValueAnimator.ofInt(0, 360).apply {
+        var anim = ValueAnimator.ofInt(0, 100).apply {
             duration = 6500
             interpolator = LinearInterpolator()
             addUpdateListener { valueAnimator ->
